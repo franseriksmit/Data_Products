@@ -1,0 +1,135 @@
+rm(list=ls())
+##setwd("c:/rwork/files")
+require("dplyr")
+require("plotly")
+require("data.table")
+require("bit64")
+require("reshape")
+require("lubridate")
+require("tidyr")
+cros<-fread("KPN_CROSSSELL.txt")
+wantedcols<-c("Bestandsnaam","TK_CD","TK_RC","TK_MW","PID")
+crosclean<-select(cros,wantedcols)
+rm(cros)
+crosclean<-mutate(crosclean,Fileid="CROSSSELL")
+cros<-crosclean
+rm(crosclean)
+results<-fread("result.rpt")
+results2<-results[,c(3,4,17)]
+rm(results)
+result<-results2
+rm(results2)
+colnames(result)[colnames(result)=="Result_Code"] <- "TK_RC"
+result[,2]<-sapply(result[,2],as.character)
+cros<-filter(cros,!is.na(TK_CD))
+cros<-merge(cros,result,by="TK_RC")
+all<-cros
+rm(cros)
+##migratie
+migr<-fread("KPN_ISDN_MIGRATIE.txt", quote="")
+migrclean<-select(migr,wantedcols)
+rm(migr)
+migrclean<-mutate(migrclean,Fileid="ISDN_MIGRATIE")
+migr<-migrclean
+rm(migrclean)
+migr<-filter(migr,!is.na(TK_CD))
+migr<-merge(migr,result,by="TK_RC")
+all<-rbind(all,migr)
+rm(migr)
+##bomzamo
+bom<-fread("KPN_BOMZAMO_MOBIELVERLENGEN.txt", quote="")
+bomclean<-select(bom,wantedcols)
+rm(bom)
+bomclean<-mutate(bomclean,Fileid="BOMZAMO_MOBIELVERLENGEN")
+bom<-bomclean
+rm(bomclean)
+bom<-filter(bom,!is.na(TK_CD))
+bom<-merge(bom,result,by="TK_RC")
+all<-rbind(all,bom)
+rm(bom)
+##bpo
+bpo<-fread("BedrijventerreinBPO.txt", quote="")
+bpo<-mutate(bpo,"Bestandsnaam"="file1.txt")
+colnames(bpo)[colnames(bpo)=="indice"] <- "rijnummer"
+bpoclean<-select(bpo,wantedcols)
+rm(bpo)
+bpoclean<-mutate(bpoclean,Fileid="BedrijventerreinBPO")
+bpo<-bpoclean
+rm(bpoclean)
+bpo<-filter(bpo,!is.na(TK_CD))
+bpo<-merge(bpo,result,by="TK_RC")
+all<-rbind(all,bpo)
+rm(bpo)
+##acq
+acq<-fread("KPN_ACQUISITIE.txt", quote="")
+acqclean<-select(acq,wantedcols)
+rm(acq)
+acqclean<-mutate(acqclean,Fileid="ACQUISITIE")
+acq<-acqclean
+rm(acqclean)
+acq<-filter(acq,!is.na(TK_CD))
+acq<-merge(acq,result,by="TK_RC")
+all<-rbind(all,acq)
+rm(acq)
+##leads
+lead<-fread("KPN_ELEADCMN.txt", quote="")
+leadclean<-select(lead,wantedcols)
+rm(lead)
+leadclean<-mutate(leadclean,Fileid="leads")
+lead<-leadclean
+rm(leadclean)
+lead<-filter(lead,!is.na(TK_CD))
+lead<-merge(lead,result,by="TK_RC")
+all<-rbind(all,lead)
+##exbpo
+exbpo<-fread("KPN_EXBPO.txt", quote="")
+exbpoclean<-select(exbpo,wantedcols)
+rm(exbpo)
+exbpoclean<-mutate(exbpoclean,Fileid="EXBPO")
+exbpo<-exbpoclean
+rm(exbpoclean)
+exbpo<-filter(exbpo,!is.na(TK_CD))
+exbpo<-merge(exbpo,result,by="TK_RC")
+all<-rbind(all,exbpo)
+rm(exbpo)
+##isdnc
+isdnc<-fread("KPN_ISDN_Complex.txt", quote="")
+isdnc<-mutate(isdnc,"Bestandsnaam"="file1.txt")
+colnames(isdnc)[colnames(isdnc)=="indice"] <- "rijnummer"
+isdncclean<-select(isdnc,wantedcols)
+rm(isdnc)
+isdncclean<-mutate(isdncclean,Fileid="ISDN_Complex")
+isdnc<-isdncclean
+rm(isdncclean)
+isdnc<-filter(isdnc,!is.na(TK_CD))
+isdnc<-merge(isdnc,result,by="TK_RC")
+all<-rbind(all,isdnc)
+rm(isdnc)
+##dig
+dig<-fread("KPN_MIGRATIE_DIG.txt", quote="")
+digclean<-select(dig,wantedcols)
+rm(dig)
+digclean<-mutate(digclean,Fileid="digs")
+dig<-digclean
+rm(digclean)
+dig<-filter(dig,!is.na(TK_CD))
+dig<-merge(dig,result,by="TK_RC")
+all<-rbind(all,dig)
+rm(dig)
+##servicecombi
+sc<-fread("KPN_ServiceCombi.txt", quote="")
+scclean<-select(sc,wantedcols)
+rm(sc)
+scclean<-mutate(scclean,Fileid="scs")
+sc<-scclean
+rm(scclean)
+sc<-filter(sc,!is.na(TK_CD))
+sc<-merge(sc,result,by="TK_RC")
+all<-rbind(all,sc)
+rm(sc)
+all<-mutate(all,TK_CD=substr(TK_CD,1,10))
+all$TK_CD<-ymd(all$TK_CD)
+all$Result_Group<-NULL
+all$TK_RC<-NULL
+all<-mutate(all,waarde=1)
+colnames(all)[colnames(all)=='Result_Group.1']<-"Result_Group"
